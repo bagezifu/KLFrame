@@ -8,7 +8,6 @@ namespace KLFrame
     /// </summary>
     public static class AudioUtility
     {
-
         //tag字典,保存tag与相关的的音量
         public static Dictionary<string, float> dic_tags = new Dictionary<string, float>();
         /// <summary>
@@ -61,12 +60,13 @@ namespace KLFrame
         /// </summary>
         /// <param name="att">声音属性设置</param>
         /// <param name="pos">坐标</param>
-        public static void PlaySoundAtLocation(AudioAttribute att, Vector3 pos)
+        public static AudioHandler PlaySoundAtLocation(AudioAttribute att, Vector3 pos)
         {
             TagHandle(att);
             AudioHandler handler = InstantiateAudioObject(pos);
             AudioEventHandle(att, handler);
             handler.StartPlay(att);
+            return handler;
         }
 
         /// <summary>
@@ -74,11 +74,11 @@ namespace KLFrame
         /// </summary>
         /// <param name="audios">声音属性设置</param>
         /// <param name="pos">坐标</param>
-        public static void PlayRandomSoundAtLocation(AudioAttribute[] audios, Vector3 pos)
+        public static AudioHandler PlayRandomSoundAtLocation(AudioAttribute[] audios, Vector3 pos)
         {
-            if (audios.Length == 0) return;
+            if (audios.Length == 0) return null;
             int random = Random.Range(0, audios.Length);
-            PlaySoundAtLocation(audios[random], pos);
+            return PlaySoundAtLocation(audios[random], pos);
         }
         /// <summary>
         /// 通过tag来实现调整音量
@@ -101,14 +101,16 @@ namespace KLFrame
         /// 附加BGM到摄像头
         /// </summary>
         /// <param name="att"></param>
-        public static void AttackBGMtoCamera(AudioAttribute att)
+        public static AudioHandler AttackBGMtoCamera(AudioAttribute att)
         {
             att = TagHandle(att);
             att.loop = true;
             AudioHandler handler = Camera.main.gameObject.AddComponent<AudioHandler>();
             AudioEventHandle(att,handler);
             handler.StartPlay(att);
+            return handler;
         }
+
     }
     [System.Serializable]
     public class AudioAttribute

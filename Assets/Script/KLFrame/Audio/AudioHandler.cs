@@ -22,6 +22,7 @@ namespace KLFrame
         public SoundDelegate OnStopPlay;
         //是否自动销毁
         public bool autoDestroy;
+        public float intervalTime;
         //系统音源组件
         private AudioSource source;
         private void Awake()
@@ -84,6 +85,38 @@ namespace KLFrame
             if (autoDestroy)
                 Destroy(this.gameObject);
         }
+
+        public void FadeOut(AudioSource source, float duration)
+        {
+            StartCoroutine(Cor_Fade(FadeType.Out, source, duration));
+        }
+
+        public void FadeIn(AudioSource source, float duration)
+        {
+            source.volume = 0;
+            StartCoroutine(Cor_Fade(FadeType.In, source, duration));
+        }
+
+        IEnumerator Cor_Fade(FadeType ft, AudioSource source, float duration)
+        {
+            float intervalCount = duration / intervalTime;
+            float tween = 1.0f / intervalCount;
+            for (;;)
+            {
+                switch (ft)
+                {
+                    case FadeType.In:
+                        source.volume += tween;
+                        break;
+                    case FadeType.Out:
+                        source.volume -= tween;
+                        break;
+                }
+                yield return new WaitForSecondsRealtime(intervalTime);
+                if (source.volume == 1 || source.volume == 0) StopCoroutine("Cor_Fade");
+            }
+        }
+
     }
     /// <summary>
     /// 声音事件参数
@@ -96,5 +129,13 @@ namespace KLFrame
         {
             ClipName = name;
         }
+    }
+    /// <summary>
+    /// 淡入淡出枚举
+    /// </summary>
+    public enum FadeType
+    {
+        In,
+        Out
     }
 }
