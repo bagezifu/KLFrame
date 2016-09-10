@@ -2,7 +2,7 @@
 using UnityEngine;
 using System.Collections;
 using System;
-
+using System.Collections.Generic;
 
 namespace KLFrame
 {
@@ -10,9 +10,10 @@ namespace KLFrame
     /// 声音处理类
     /// 继承自MonoBehaviour,存在于场景中
     /// </summary>
-    public class AudioHandler : MonoBehaviour
+    public class AudioHandler : KLFrameBase<AudioHandler>, IEnumerable
     {
 
+        public AudioSource source;
         public delegate void SoundDelegate(UnityEngine.Object sender, AudioEventArgs arg);
         //开始播放
         public SoundDelegate OnStartPlay;
@@ -24,40 +25,70 @@ namespace KLFrame
         public bool autoDestroy;
         public float intervalTime;
         //系统音源组件
-        private AudioSource source;
-        private void Awake()
+
+        private List<AudioAttribute> AudioQueues = new List<AudioAttribute>();
+        private int queuesIndex = -1;
+        private bool isPause = false;
+
+        void Awake()
         {
             source = gameObject.AddComponent<AudioSource>();
+
         }
+
+        public void AddQueue(AudioAttribute att)
+        {
+            AudioQueues.Add(att);
+        }
+
+        public void AddQueues(AudioAttribute[] atts)
+        {
+            AudioQueues.AddRange(atts);
+        }
+
         /// <summary>
         /// 执行开始播放
         /// </summary>
         /// <param name="att">声音属性类</param>
-        public void StartPlay(AudioAttribute att)
-        {          
-            if (!source.clip)
-            {
-                source.clip = att.clip;
-                source.volume = att.volume;
-                source.spatialBlend = att.spatialBlend;
-                source.loop = att.loop;
-                source.Play();
-                if (OnStartPlay != null)
-                    OnStartPlay(this, new AudioEventArgs(att.clip.name));
-               if(!source.loop) StartCoroutine(StopEvent(source.clip.length));
-            }
-            else
+        public void Play()
+        {
+            if (isPause)
             {
                 source.Play();
                 StartCoroutine(StopEvent(source.clip.length - source.time));
+                isPause = false;
             }
-            autoDestroy = att.autoDestroy;
+            else
+            {
+                queuesIndex++;
+                SetSourceValueAndPlay();
+                if (OnStartPlay != null)
+                    OnStartPlay(this, new AudioEventArgs(AudioQueues[queuesIndex].clip.name));
+                if (!source.loop) StartCoroutine(StopEvent(source.clip.length));
+            }
+            autoDestroy = AudioQueues[queuesIndex].autoDestroy;
+            Debug.Log(autoDestroy);
         }
+
+
+
+        private void SetSourceValueAndPlay()
+        {
+            source.clip = AudioQueues[queuesIndex].clip;
+            source.volume = AudioQueues[queuesIndex].volume;
+            source.spatialBlend = AudioQueues[queuesIndex].spatialBlend;
+            source.loop = AudioQueues[queuesIndex].loop;
+            source.Play();
+        }
+
+
+
         /// <summary>
         /// 执行暂停播放
         /// </summary>
-        public void PausePlay()
+        public void Pause()
         {
+            isPause = true;
             source.Pause();
             if (OnPausePlay != null)
                 OnPausePlay(this, new AudioEventArgs(source.clip.name));
@@ -66,7 +97,7 @@ namespace KLFrame
         /// <summary>
         /// 执行停止播放
         /// </summary>
-        public void StopPlay()
+        public void Stop()
         {
             source.Stop();
             if (OnStopPlay != null)
@@ -81,9 +112,20 @@ namespace KLFrame
         {
             yield return new WaitForSeconds(time);
             if (OnStopPlay != null)
+            {
                 OnStopPlay(this, new AudioEventArgs(source.clip.name));
-            if (autoDestroy)
-                Destroy(this.gameObject);
+            }
+            if (queuesIndex + 1 == AudioQueues.Count)
+            {
+                if (autoDestroy)
+                {
+                    Destroy(this.gameObject);
+                }
+            }
+            else
+            {
+                Play();
+            }
         }
 
         public void FadeOut(AudioSource source, float duration)
@@ -116,6 +158,15 @@ namespace KLFrame
                 if (source.volume == 1 || source.volume == 0) StopCoroutine("Cor_Fade");
             }
         }
+
+        public IEnumerator GetEnumerator()
+        {
+            return new AudioHandlerEnumerator(AudioQueues.ToArray());
+        }
+
+
+
+
 
     }
     /// <summary>

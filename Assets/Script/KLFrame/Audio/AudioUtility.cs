@@ -1,6 +1,8 @@
 ﻿//author:kuribayashi    2016年8月31日05:24:15
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
+
 namespace KLFrame
 {
     /// <summary>
@@ -54,6 +56,27 @@ namespace KLFrame
             if (att.OnStopPlay != null) handler.OnStopPlay += att.OnStopPlay;
         }
 
+        public static AudioHandler PlaySoundAsQueue(AudioAttribute[] atts)
+        {
+          return PlaySoundAsQueueAtLocation(atts, Camera.main.transform.position);
+        }
+
+        public static AudioHandler PlaySoundAsQueueAtLocation(AudioAttribute[] atts,Vector2 pos) {  
+            AudioHandler handler = InstantiateAudioObject(pos);
+            foreach (AudioAttribute a in atts)
+            {
+                TagHandle(a);
+                AudioEventHandle(a, handler);
+            }
+            handler.AddQueues(atts);
+            handler.Play();
+            return handler;
+        }
+
+
+        public static AudioHandler PlaySound(AudioAttribute att) {
+           return PlaySoundAtLocation(att,Camera.main.transform.position);
+        }
 
         /// <summary>
         /// 在指定位置播放音效
@@ -65,7 +88,8 @@ namespace KLFrame
             TagHandle(att);
             AudioHandler handler = InstantiateAudioObject(pos);
             AudioEventHandle(att, handler);
-            handler.StartPlay(att);
+            handler.AddQueue(att);
+            handler.Play();
             return handler;
         }
 
@@ -107,9 +131,12 @@ namespace KLFrame
             att.loop = true;
             AudioHandler handler = Camera.main.gameObject.AddComponent<AudioHandler>();
             AudioEventHandle(att,handler);
-            handler.StartPlay(att);
+            handler.AddQueue(att);
+            handler.Play();
             return handler;
         }
+
+       
 
     }
     [System.Serializable]
@@ -117,13 +144,20 @@ namespace KLFrame
     {
         public AudioClip clip;
         public string tag;
-        public float volume = 1;
-        public bool loop = false;
-        public float spatialBlend = 0;
-        public bool autoDestroy = true;
+        public float volume;
+        public bool loop;
+        public float spatialBlend;
+        public bool autoDestroy;
         public AudioHandler.SoundDelegate OnStartPlay;
         public AudioHandler.SoundDelegate OnPausePlay;
         public AudioHandler.SoundDelegate OnStopPlay;
+
+        public void Initialize() {
+            volume = 1;
+            loop = false;
+            spatialBlend = 0;
+        }
+      
         public AudioAttribute(AudioClip CLIP)
         {
             clip = CLIP;
@@ -142,7 +176,7 @@ namespace KLFrame
             loop = LOOP;
             autoDestroy = AUTODESTROY;
         }
-         
+      
     }
 
 }

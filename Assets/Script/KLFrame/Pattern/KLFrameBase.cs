@@ -116,8 +116,6 @@ namespace KLFrame
                                     Debug.LogWarningFormat("{0}类成员自动获取{1}组件失败,自动添加属性为Flase.请确定当前Gameobject是否拥有此组件!", this.GetType().Name, f.FieldType.Name);
                                 }
                             }
-
-
                         }
                     }
 
